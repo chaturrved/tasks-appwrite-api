@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from datetime import datetime
 from db import CRUD
+from typing import Optional
 
 app = FastAPI(
     title="Simple task API",
@@ -14,15 +15,17 @@ crud = CRUD()
 
 class TaskCreateModel(BaseModel):
     name: str
-    description: str
-    date_added: str = Field(default=datetime.utcnow().isoformat())
+    description: Optional[str] = None  # Make description optional
+    date_added: Optional[str] = Field(default=datetime.utcnow().isoformat())
     due_date: str
+    completed: Optional[bool] = None  # Make completed optional
 
 
 class TaskUpdateModel(BaseModel):
-    name: str
-    description: str
-    due_date: str
+    name: Optional[str] = None
+    description: Optional[str] = None  # Make description optional
+    due_date: Optional[str] = None
+    completed: Optional[bool] = None 
 
 
 @app.get('/tasks')
@@ -45,7 +48,8 @@ async def create_task(task_data: TaskCreateModel):
         'name': task_data.name,
         'description': task_data.description,
         'due_date' : task_data.due_date,
-        'date_added': task_data.date_added
+        'date_added': task_data.date_added,
+        'completed': task_data.completed
     })
 
     return result
@@ -53,13 +57,10 @@ async def create_task(task_data: TaskCreateModel):
 
 @app.patch('/task/{task_id}')
 async def Update_task(task_id: str, update_data: TaskUpdateModel):
+    update_dict = update_data.dict(exclude_unset=True)
     result = crud.update_task(
         task_id=task_id,
-        data={
-            'name': update_data.name,
-            'description': update_data.description,
-            'due_date' : task_data.due_date,
-        }
+        data=update_dict
     )
 
     return result
